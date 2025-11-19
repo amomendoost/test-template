@@ -1,0 +1,74 @@
+---
+description: Core architecture and quality rules for React + Vite + shadcn/ui template
+globs: ["src/**/*.{tsx,ts}", "package.json", "vite.config.ts", "tailwind.config.ts"]
+alwaysApply: true
+---
+
+# React + Vite + shadcn/ui Template - Core Rules
+
+## CRITICAL ARCHITECTURE RULES
+
+### Component Size & Organization
+- **NEVER** create components over 300 lines
+- **ALWAYS** break down complex components into smaller, focused pieces (20-100 lines)
+- **EXTRACT** reusable logic to custom hooks, not copy-paste
+- **USE** composition patterns - build complex UI from smaller components
+
+### File Structure Requirements
+```
+src/
+├── components/
+│   ├── ui/              # shadcn/ui components (READ-ONLY)
+│   ├── common/          # Reusable components
+│   ├── forms/           # Form components
+│   └── features/        # Feature-specific components
+├── hooks/               # Custom React hooks
+├── lib/
+│   ├── utils.ts         # Utilities (includes cn function)
+│   ├── types.ts         # Shared TypeScript types
+│   ├── constants.ts     # App constants
+│   └── validations/     # Zod schemas
+├── pages/               # Route components (composition only)
+├── services/            # API calls
+└── context/             # React context providers
+```
+
+### Import Organization
+```tsx
+// 1. React imports
+import React, { useState, useEffect } from 'react'
+
+// 2. Third-party libraries
+import { useQuery } from '@tanstack/react-query'
+import { zodResolver } from '@hookform/resolvers/zod'
+
+// 3. UI components
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+
+// 4. Local components
+import { UserCard } from '@/components/common/UserCard'
+
+// 5. Hooks and utilities
+import { useDisclosure } from '@/hooks/useDisclosure'
+import { cn } from '@/lib/utils'
+
+// 6. Types and constants
+import type { User } from '@/lib/types'
+import { API_ENDPOINTS } from '@/lib/constants'
+```
+
+### Essential Commands
+```bash
+npm run dev          # Start development server (port 8080)
+npm run build        # Production build  
+npm run lint         # Run ESLint - MUST pass before shipping
+```
+
+### Quality Gates
+- **BEFORE SHIPPING**: Run `npm run lint` and fix all issues
+- **ACCESSIBILITY**: Maintain WCAG 2.1 AA contrast (4.5:1 minimum)
+- **NO CONSOLE ERRORS**: Zero warnings in browser console
+- **RESPONSIVE**: Test on mobile and desktop
+- **DESIGN QUALITY**: Industry-appropriate visual identity with purposeful color psychology
+- **CUSTOM DESIGN**: Interfaces should feel premium and custom-crafted, not template-like

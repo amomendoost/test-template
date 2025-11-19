@@ -1,0 +1,15 @@
+src/
+node_modules/
+*.log
+.DS_Store
+tsconfig.json
+tsconfig.*.json
+*.tsbuildinfo
+examples/
+tests/
+.github/
+.vscode/
+*.test.ts
+*.spec.ts
+coverage/
+.nyc_output/
