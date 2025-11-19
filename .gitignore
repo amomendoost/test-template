@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 !0x-tagger/dist
+!0x-tagger/node_modules
+
 dist-ssr
 *.local
 
