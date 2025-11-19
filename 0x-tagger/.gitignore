@@ -1,7 +1,0 @@
-*.log
-.DS_Store
-*.tsbuildinfo
-.vscode/
-.idea/
-coverage/
-.nyc_output/
