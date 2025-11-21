@@ -136,7 +136,7 @@
       line: element.getAttribute('data-0x-line'),
       column: element.getAttribute('data-0x-column'),
       tagName: element.tagName.toLowerCase(),
-      className: element.className,
+      className: element.getAttribute('class') || '',
       textContent: textInfo.text,
       hasChildElements: textInfo.hasChildElements,
       computedStyles: {},
@@ -171,7 +171,7 @@
     });
 
     // Get Tailwind classes
-    data.tailwindClasses = element.className.split(/\s+/).filter(cls => cls.length > 0);
+    data.tailwindClasses = (element.getAttribute('class') || '').split(/\s+/).filter(cls => cls.length > 0);
 
     return data;
   }
