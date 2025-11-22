@@ -312,7 +312,7 @@
     if (!target && event.target !== hoveredElement) {
       const originalTarget = event.target.closest('[data-0x-component-id]');
       if (originalTarget && !isEditableElement(originalTarget)) {
-        console.log('[0x-design-mode] Filtered non-editable element:', originalTarget.tagName);
+        // Filtered non-editable element
       }
     }
 
@@ -358,8 +358,6 @@
       type: '0x-design-mode:element-selected',
       data: componentData,
     }, '*');
-
-    console.log('[0x-design-mode] Element selected:', componentData);
   }
 
   // Handle mouse leave
@@ -397,14 +395,12 @@
       subtree: true,
     });
 
-    console.log('[0x-design-mode] MutationObserver started');
   }
 
   function stopMutationObserver() {
     if (mutationObserver) {
       mutationObserver.disconnect();
       mutationObserver = null;
-      console.log('[0x-design-mode] MutationObserver stopped');
     }
   }
 
@@ -428,7 +424,6 @@
   function enableDesignMode() {
     if (isDesignModeActive) return;
 
-    console.log('[0x-design-mode] Enabling Design Mode');
     isDesignModeActive = true;
     document.body.classList.add(ACTIVE_CLASS);
 
@@ -439,7 +434,6 @@
     startMutationObserver();
 
     // Scan existing elements for auto-tagging
-    console.log('[0x-design-mode] Scanning existing elements...');
     scanAndAutoTag(document.body);
 
     // Add event listeners
@@ -456,7 +450,6 @@
   // Update element with new content/styles (optimized with RAF)
   function updateElement(updates) {
     const { componentId, textContent, styles } = updates;
-    console.log('[0x-design-mode] updateElement called with:', updates);
 
     // Find element by component ID
     const element = document.querySelector(`[data-0x-component-id="${componentId}"]`);
@@ -466,13 +459,11 @@
       return;
     }
 
-    console.log('[0x-design-mode] ✓ Element found:', element);
 
     // Use requestAnimationFrame for smooth updates
     requestAnimationFrame(() => {
       // Update text content
       if (textContent !== undefined && textContent !== null) {
-        console.log('[0x-design-mode] Updating text to:', textContent);
 
         // Find all text nodes using TreeWalker
         const walker = document.createTreeWalker(
@@ -491,16 +482,12 @@
         }
 
         if (textNodes.length > 0) {
-          console.log('[0x-design-mode] Found', textNodes.length, 'text nodes');
           textNodes[0].textContent = textContent;
-          console.log('[0x-design-mode] ✓ Text updated');
         } else {
           // Check if element has child elements before setting textContent
           if (element.children.length === 0) {
             // No child elements, safe to set textContent directly
-            console.log('[0x-design-mode] No child elements, setting text directly');
             element.textContent = textContent;
-            console.log('[0x-design-mode] ✓ Text set directly');
           } else {
             console.warn('[0x-design-mode] ⚠️ Element has child elements, skipping text update to preserve children');
           }
@@ -509,29 +496,24 @@
 
       // Update styles (batch updates for better performance)
       if (styles) {
-        console.log('[0x-design-mode] Updating styles:', styles);
         let styleCount = 0;
 
         // Apply all styles
         Object.entries(styles).forEach(([property, value]) => {
           // If value is empty, '0px', or reset value, remove the style property
           if (value === '' || value === '0px') {
-            console.log('[0x-design-mode] Removing', property);
             element.style.removeProperty(property.replace(/([A-Z])/g, '-$1').toLowerCase());
             styleCount++;
           } else if (value && value !== 'rgb(0, 0, 0)') {
             // Apply non-empty, non-default values
-            console.log('[0x-design-mode] Setting', property, '=', value);
             element.style[property] = value;
             styleCount++;
           }
         });
 
-        console.log('[0x-design-mode] ✓', styleCount, 'styles applied/removed');
       }
 
 
-      console.log('[0x-design-mode] ✅ Element updated successfully');
     });
   }
 
@@ -539,7 +521,6 @@
   function disableDesignMode() {
     if (!isDesignModeActive) return;
 
-    console.log('[0x-design-mode] Disabling Design Mode');
     isDesignModeActive = false;
     document.body.classList.remove(ACTIVE_CLASS);
 
@@ -572,30 +553,19 @@
 
   // Listen for messages from parent window
   window.addEventListener('message', (event) => {
-    // Log ALL messages for debugging
-    console.log('[0x-design-mode] 📨 Message received from parent:', {
-      type: event.data?.type,
-      hasPayload: !!event.data?.payload,
-      origin: event.origin,
-      timestamp: new Date().toISOString()
-    });
-
     // Security: In production, validate event.origin
     const { type, payload } = event.data;
 
     switch (type) {
       case '0x-design-mode:enable':
-        console.log('[0x-design-mode] 🟢 Handling enable message');
         enableDesignMode();
         break;
 
       case '0x-design-mode:disable':
-        console.log('[0x-design-mode] 🔴 Handling disable message');
         disableDesignMode();
         break;
 
       case '0x-design-mode:toggle':
-        console.log('[0x-design-mode] 🔄 Handling toggle message');
         if (isDesignModeActive) {
           disableDesignMode();
         } else {
@@ -604,10 +574,7 @@
         break;
 
       case '0x-design-mode:update-element':
-        console.log('[0x-design-mode] 🎨 Handling update-element message');
-        console.log('[0x-design-mode] Payload:', payload);
         if (payload) {
-          console.log('[0x-design-mode] ✅ Calling updateElement with payload');
           updateElement(payload);
         } else {
           console.warn('[0x-design-mode] ❌ No payload in update-element message!');
@@ -642,13 +609,69 @@
 
   // Note: Global error handler is at the top of the file
 
-  // Send ready message to parent
-  window.addEventListener('load', () => {
+  // ========================================
+  // Navigation Tracking
+  // ========================================
+  // Track URL changes and send to parent for address bar display
 
+  function sendUrlToParent() {
+    try {
+      // Get current URL without cache buster (_t parameter)
+      let pathname = window.location.pathname;
+      let search = window.location.search;
+      let hash = window.location.hash;
+
+      // Remove _t cache buster from query string
+      if (search) {
+        const params = new URLSearchParams(search);
+        params.delete('_t'); // Remove cache buster
+        const cleanSearch = params.toString();
+        search = cleanSearch ? '?' + cleanSearch : '';
+      }
+
+      const currentUrl = pathname + search + hash;
+      window.parent.postMessage({
+        type: '0x-navigation:url-changed',
+        url: currentUrl
+      }, '*');
+    } catch (e) {
+      console.error('[0x-navigation] Failed to send URL to parent:', e);
+    }
+  }
+
+  // Listen for popstate (back/forward buttons)
+  window.addEventListener('popstate', function() {
+    sendUrlToParent();
+  });
+
+  // Override pushState and replaceState to catch programmatic navigation
+  const originalPushState = history.pushState;
+  const originalReplaceState = history.replaceState;
+
+  history.pushState = function(...args) {
+    originalPushState.apply(this, args);
+    sendUrlToParent();
+  };
+
+  history.replaceState = function(...args) {
+    originalReplaceState.apply(this, args);
+    sendUrlToParent();
+  };
+
+  // Also listen for hash changes
+  window.addEventListener('hashchange', function() {
+    sendUrlToParent();
+  });
+
+
+  // Send ready message and initial URL to parent on load
+  window.addEventListener('load', () => {
     window.parent.postMessage({
       type: '0x-design-mode:ready',
     }, '*');
-    console.log('[0x-design-mode] Script loaded and ready');
+
+    // Send initial URL
+    sendUrlToParent();
   });
 
   // Expose API for debugging
