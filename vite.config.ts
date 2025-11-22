@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     componentTagger({
-      enabled: true, // Always enabled for testing
+      enabled: mode === 'development', // Only in development mode
       debug: true, // Enable debug logging to see what's being tagged
       exclude: [
         'node_modules/**',
