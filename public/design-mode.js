@@ -129,15 +129,35 @@
 
     const textInfo = getDirectTextContent(element);
 
+    const componentId = element.getAttribute('data-0x-component-id');
+
+    // Find instance index for elements with duplicate component IDs (loop elements)
+    let instanceIndex = 0;
+    if (componentId) {
+      const allWithSameId = document.querySelectorAll(`[data-0x-component-id="${componentId}"]`);
+      for (let i = 0; i < allWithSameId.length; i++) {
+        if (allWithSameId[i] === element) {
+          instanceIndex = i;
+          break;
+        }
+      }
+    }
+
+    // Get content type from tagger (static/dynamic/empty/children)
+    const contentType = element.getAttribute('data-0x-content') || 'unknown';
+
     const data = {
-      componentId: element.getAttribute('data-0x-component-id'),
+      componentId: componentId,
       componentName: element.getAttribute('data-0x-component'),
       file: element.getAttribute('data-0x-file'),
       line: element.getAttribute('data-0x-line'),
       column: element.getAttribute('data-0x-column'),
+      contentType: contentType, // Content type from build (static/dynamic/empty/children)
+      instanceIndex: instanceIndex, // Index among elements with same component ID
       tagName: element.tagName.toLowerCase(),
       className: element.getAttribute('class') || '',
       textContent: textInfo.text,
+      originalTextContent: textInfo.text, // Keep original for matching during save
       hasChildElements: textInfo.hasChildElements,
       computedStyles: {},
     };
@@ -424,6 +444,13 @@
   function enableDesignMode() {
     if (isDesignModeActive) return;
 
+    // Wait for body to be ready
+    if (!document.body) {
+      console.warn('[0x-design-mode] document.body not ready, retrying...');
+      setTimeout(enableDesignMode, 50);
+      return;
+    }
+
     isDesignModeActive = true;
     document.body.classList.add(ACTIVE_CLASS);
 
@@ -449,13 +476,17 @@
 
   // Update element with new content/styles (optimized with RAF)
   function updateElement(updates) {
-    const { componentId, textContent, styles } = updates;
+    const { componentId, textContent, styles, instanceIndex } = updates;
 
-    // Find element by component ID
-    const element = document.querySelector(`[data-0x-component-id="${componentId}"]`);
+    // Find element by component ID and instanceIndex
+    const allElements = document.querySelectorAll(`[data-0x-component-id="${componentId}"]`);
+
+    // Use instanceIndex to get the correct element (default to 0)
+    const idx = typeof instanceIndex === 'number' ? instanceIndex : 0;
+    const element = allElements[idx];
 
     if (!element) {
-      console.warn('[0x-design-mode] ❌ Element not found:', componentId);
+      console.warn('[0x-design-mode] ❌ Element not found:', componentId, 'index:', idx);
       return;
     }
 
@@ -464,32 +495,25 @@
     requestAnimationFrame(() => {
       // Update text content
       if (textContent !== undefined && textContent !== null) {
-
-        // Find all text nodes using TreeWalker
-        const walker = document.createTreeWalker(
-          element,
-          NodeFilter.SHOW_TEXT,
-          null,
-          false
-        );
-
-        const textNodes = [];
-        let node;
-        while (node = walker.nextNode()) {
-          if (node.textContent.trim()) {
-            textNodes.push(node);
-          }
-        }
-
-        if (textNodes.length > 0) {
-          textNodes[0].textContent = textContent;
+        // Check if element has child elements
+        if (element.children.length === 0) {
+          // No child elements - safe to set textContent directly
+          element.textContent = textContent;
         } else {
-          // Check if element has child elements before setting textContent
-          if (element.children.length === 0) {
-            // No child elements, safe to set textContent directly
-            element.textContent = textContent;
+          // Has child elements - find direct text node only
+          let directTextNode = null;
+          for (const child of element.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE && child.textContent.trim()) {
+              directTextNode = child;
+              break;
+            }
+          }
+
+          if (directTextNode) {
+            directTextNode.textContent = textContent;
           } else {
-            console.warn('[0x-design-mode] ⚠️ Element has child elements, skipping text update to preserve children');
+            // No direct text node, but has child elements - skip to preserve children
+            console.warn('[0x-design-mode] ⚠️ No direct text node found, skipping');
           }
         }
       }
