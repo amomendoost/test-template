@@ -9,10 +9,21 @@
   // Global error handler - send errors to parent even if design mode crashes
   window.addEventListener('error', (event) => {
     try {
+      // Skip "Script error" or empty messages (cross-origin errors without details)
+      // These are security-restricted errors from third-party scripts
+      if (!event.message || event.message === 'Script error.' || event.message === 'Script error') {
+        return;
+      }
+
+      // Skip errors without any useful information
+      if (!event.filename && !event.lineno && !event.error) {
+        return;
+      }
+
       window.parent.postMessage({
         type: '0x-design-mode:console-error',
         data: {
-          message: event.message || 'Unknown error',
+          message: event.message,
           filename: event.filename,
           lineno: event.lineno,
           colno: event.colno,
